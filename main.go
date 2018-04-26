@@ -42,6 +42,9 @@ func main() {
 	fmt.Printf("SQL Server %s\n", getVersion(version))
 }
 
+// Returns the user-readable version corresponding to an
+// internal SQL Server Version
+// Versions from: https://sqlserverbuilds.blogspot.de/2014/01/sql-server-internal-database-versions.html
 func getVersion(version uint16) string {
 	switch version {
 	case 869:
