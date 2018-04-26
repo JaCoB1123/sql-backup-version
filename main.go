@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"encoding/binary"
 	"flag"
+	"bytes"
+	"io"
+)
+
+var (
+	BLOCK_SIZE = int64(0x200)
 )
 
 func main() {
@@ -26,19 +32,48 @@ func main() {
 	fmt.Printf("SQL Server %s\n", getVersion(version))
 }
 
+func findMSCIBlock(file io.ReadSeeker) (int64, error) {
+	offset := int64(0)
+	blockHeader := make([]byte, 4)
+	for i := 0; i < 100; i++ {
+		offset = offset + BLOCK_SIZE
+		_, err := file.Seek(offset, 0)
+		if err != nil {
+			return 0, err
+		}
+
+		_, err = file.Read(blockHeader)
+		if err != nil {
+			return 0, err
+		}
+
+		if bytes.Equal(blockHeader, []byte("MSCI")){
+			return offset, nil
+		}
+	}
+
+	return 0, fmt.Errorf("Could not find MSCI-Block")
+}
+
 func getInternalVersionFromBackup(filename string) (uint16, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return 0, err
 	}
+	defer f.Close()
 
-	_, err = f.Seek(0xEAC, 0)
+	offset, err := findMSCIBlock(f)
 	if err != nil {
 		return 0, err
 	}
 
-	bytes := make([]byte, 2)
-	c, err := f.Read(bytes)
+	_, err = f.Seek(offset + 0x0AC, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	intVersion := make([]byte, 2)
+	c, err := f.Read(intVersion)
 	if err != nil {
 		return 0, err
 	}
@@ -47,7 +82,7 @@ func getInternalVersionFromBackup(filename string) (uint16, error) {
 		return 0, fmt.Errorf("Error reading two bytes")
 	}
 
-	version := binary.LittleEndian.Uint16(bytes)
+	version := binary.LittleEndian.Uint16(intVersion)
 	return version, nil
 }
 
