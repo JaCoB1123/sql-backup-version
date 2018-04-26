@@ -17,29 +17,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	f, err := os.Open(*filename)
+	version, err := getInternalVersionFromBackup(*filename)
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Printf("Internal Version: %d\n", version)
+	fmt.Printf("SQL Server %s\n", getVersion(version))
+}
+
+func getInternalVersionFromBackup(filename string) (uint16, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+
 	_, err = f.Seek(0xEAC, 0)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	bytes := make([]byte, 2)
 	c, err := f.Read(bytes)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	if c < 2 {
-		panic("Error reading two bytes")
+		return 0, fmt.Errorf("Error reading two bytes")
 	}
 
 	version := binary.LittleEndian.Uint16(bytes)
-	fmt.Printf("Internal Version: %d\n", version)
-	fmt.Printf("SQL Server %s\n", getVersion(version))
+	return version, nil
 }
 
 // Returns the user-readable version corresponding to an
