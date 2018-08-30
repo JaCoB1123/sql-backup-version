@@ -44,7 +44,7 @@ func main() {
 	fmt.Printf("SQL Server %s (%d.0)\n", getVersion(version), getMajorVersion(version))
 	fmt.Println("")
 
-	for _, server := range cfg.Servers {
+	for i, server := range cfg.Servers {
 		db, err := getConnection(server)
 
 		stmt, err := db.Prepare("select @@VERSION, SERVERPROPERTY('ProductLevel') AS ProductLevel, SERVERPROPERTY('Edition') AS Edition, SERVERPROPERTY('ProductVersion') AS ProductVersion")
@@ -63,7 +63,7 @@ func main() {
 			log.Fatal("Scan failed:", err.Error())
 		}
 
-		serverName := fmt.Sprintf("%d: %s\\%s", server.Id, server.Host, server.Instance)
+		serverName := fmt.Sprintf("%d: %s\\%s", i, server.Host, server.Instance)
 		fmt.Println(serverName)
 
 		fmt.Printf("Version: %s (%s)\n", productversion, productlevel)
@@ -79,16 +79,8 @@ func main() {
 		panic(err)
 	}
 
-	var db *sql.DB
-	for _, server := range cfg.Servers {
-		if server.Id != serverId {
-			continue
-		}
-
-		db, err = getConnection(server)
-		break
-	}
-
+	server := cfg.Servers[serverId]
+	db, err := getConnection(server)
 	if err != nil {
 		panic(err)
 	}
