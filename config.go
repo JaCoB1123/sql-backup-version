@@ -18,7 +18,14 @@ type server struct {
 	Edition                  string `json:"-"`
 }
 
+type stringer string
+
+func (s stringer) String() string {
+	return string(s)
+}
+
 type serverList []server
+type databaseList []stringer
 
 // Configuration saves the configuration
 type configuration struct {
@@ -59,4 +66,12 @@ func (sl serverList) getLength() int {
 
 func (sl serverList) getElement(i int) fmt.Stringer {
 	return &sl[i]
+}
+
+func (dl databaseList) getLength() int {
+	return len(dl)
+}
+
+func (dl databaseList) getElement(i int) fmt.Stringer {
+	return &dl[i]
 }

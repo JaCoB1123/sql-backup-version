@@ -67,17 +67,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for i, database := range databases {
-		fmt.Printf("%d: %s\n", i, database)
-	}
 
-	fmt.Printf("Database: ")
-	var databaseIndex int
-	_, err = fmt.Scanf("%d\n", &databaseIndex)
-	if err != nil {
-		panic(err)
-	}
-
+	databaseIndex, err := prompt(databases, "Database: ")
 	database := databases[databaseIndex]
 	fmt.Println(database)
 }
@@ -85,7 +76,7 @@ func main() {
 func prompt(values selectable, prompt string) (int, error) {
 	for i := 0; i < values.getLength(); i++ {
 		val := values.getElement(i)
-		fmt.Printf("%d: %s\n\n", i, val)
+		fmt.Printf("%d: %s\n", i, val)
 	}
 
 	var serverIndex int
@@ -123,14 +114,14 @@ func getServerVersion(cfg *configuration, server *server) {
 	server.Level = productlevel
 }
 
-func getDatabases(db *sql.DB) ([]string, error) {
+func getDatabases(db *sql.DB) (databaseList, error) {
 	dbList, err := db.Prepare("SELECT name FROM master.sys.databases")
 	if err != nil {
 		return nil, err
 	}
 	defer dbList.Close()
 
-	var databases []string
+	var databases databaseList
 	rows, err := dbList.Query()
 	for rows.Next() {
 		var name string
@@ -139,7 +130,7 @@ func getDatabases(db *sql.DB) ([]string, error) {
 			return nil, err
 		}
 
-		databases = append(databases, name)
+		databases = append(databases, stringer(name))
 	}
 
 	return databases, nil
