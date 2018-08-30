@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
-	"fmt"
+	"bytes"
 	"encoding/binary"
 	"flag"
-	"bytes"
+	"fmt"
 	"io"
+	"os"
 )
 
 var (
@@ -47,7 +47,7 @@ func findMSCIBlock(file io.ReadSeeker) (int64, error) {
 			return 0, err
 		}
 
-		if bytes.Equal(blockHeader, []byte("MSCI")){
+		if bytes.Equal(blockHeader, []byte("MSCI")) {
 			return offset, nil
 		}
 	}
@@ -67,7 +67,7 @@ func getInternalVersionFromBackup(filename string) (uint16, error) {
 		return 0, err
 	}
 
-	_, err = f.Seek(offset + 0x0AC, 0)
+	_, err = f.Seek(offset+0x0AC, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -86,9 +86,51 @@ func getInternalVersionFromBackup(filename string) (uint16, error) {
 	return version, nil
 }
 
-// Returns the user-readable version corresponding to an
-// internal SQL Server Version
-// Versions from: https://sqlserverbuilds.blogspot.de/2014/01/sql-server-internal-database-versions.html
+// Returns the Major Version corresponding to an internal SQL Server Version
+// Versions from: https://sqlserverbuilds.blogspot.com/
+func getMajorVersion(version uint16) string {
+	switch version {
+	case 869:
+		return 14
+	case 852:
+		return 13
+	case 782:
+		return 12
+	case 706:
+		fallthrough
+	case 684:
+		return 11
+	case 660:
+		fallthrough
+	case 661:
+		fallthrough
+	case 655:
+		return 10
+	case 612:
+		fallthrough
+	case 611:
+		return 9
+	case 539:
+		return 8
+	case 515:
+		return 7
+	case 408:
+		return 6
+	}
+
+	if version < 408 {
+		return 5
+	}
+
+	if version > 869 {
+		return 15
+	}
+
+	return -1
+}
+
+// Returns the user-readable version corresponding to an internal SQL Server Version
+// Versions from: https://sqlserverbuilds.blogspot.com/
 func getVersion(version uint16) string {
 	switch version {
 	case 869:
