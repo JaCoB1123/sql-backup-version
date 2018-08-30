@@ -49,19 +49,9 @@ func main() {
 		getServerVersion(cfg, server)
 	}
 
-	for i := range cfg.Servers {
-		server := cfg.Servers[i]
-		fmt.Printf("%d: %s\n\n", i, server)
-	}
+	serverIndex, err := prompt(cfg.Servers, "Server: ")
 
-	fmt.Printf("Server: ")
-	var serverId int
-	_, err = fmt.Scanf("%d\n", &serverId)
-	if err != nil {
-		panic(err)
-	}
-
-	server := cfg.Servers[serverId]
+	server := cfg.Servers[serverIndex]
 	db, err := getConnection(server)
 	if err != nil {
 		panic(err)
@@ -90,6 +80,22 @@ func main() {
 
 	database := databases[databaseIndex]
 	fmt.Println(database)
+}
+
+func prompt(values selectable, prompt string) (int, error) {
+	for i := 0; i < values.getLength(); i++ {
+		val := values.getElement(i)
+		fmt.Printf("%d: %s\n\n", i, val)
+	}
+
+	var serverIndex int
+	fmt.Printf(prompt)
+	_, err := fmt.Scanf("%d\n", &serverIndex)
+	if err != nil {
+		return -1, err
+	}
+
+	return serverIndex, nil
 }
 
 func getServerVersion(cfg *configuration, server *server) {
