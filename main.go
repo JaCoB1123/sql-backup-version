@@ -29,7 +29,7 @@ func main() {
 	}
 
 	fmt.Printf("Internal Version: %d\n", version)
-	fmt.Printf("SQL Server %s\n", getVersion(version))
+	fmt.Printf("SQL Server %s (%d.0)\n", getVersion(version), getMajorVersion(version))
 }
 
 func findMSCIBlock(file io.ReadSeeker) (int64, error) {
@@ -88,7 +88,7 @@ func getInternalVersionFromBackup(filename string) (uint16, error) {
 
 // Returns the Major Version corresponding to an internal SQL Server Version
 // Versions from: https://sqlserverbuilds.blogspot.com/
-func getMajorVersion(version uint16) string {
+func getMajorVersion(version uint16) uint16 {
 	switch version {
 	case 869:
 		return 14
@@ -126,7 +126,7 @@ func getMajorVersion(version uint16) string {
 		return 15
 	}
 
-	return -1
+	return 0
 }
 
 // Returns the user-readable version corresponding to an internal SQL Server Version
