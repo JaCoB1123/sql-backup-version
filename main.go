@@ -7,6 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"net/url"
+
+	"database/sql"
+	"log"
+
+	_ "github.com/denisenkom/go-mssqldb"
 )
 
 var (
@@ -14,8 +21,12 @@ var (
 )
 
 func main() {
-	filename := flag.String("filename", "", "path to the backup to analyze")
+	cfg, err := getConfig()
+	if err != nil {
+		panic(err)
+	}
 
+	filename := flag.String("filename", "", "path to the backup to analyze")
 	flag.Parse()
 
 	if *filename == "" {
@@ -28,8 +39,117 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Println("File Information:")
 	fmt.Printf("Internal Version: %d\n", version)
 	fmt.Printf("SQL Server %s (%d.0)\n", getVersion(version), getMajorVersion(version))
+	fmt.Println("")
+
+	for _, server := range cfg.Servers {
+		db, err := getConnection(server)
+
+		stmt, err := db.Prepare("select @@VERSION, SERVERPROPERTY('ProductLevel') AS ProductLevel, SERVERPROPERTY('Edition') AS Edition, SERVERPROPERTY('ProductVersion') AS ProductVersion")
+		if err != nil {
+			log.Fatal("Prepare failed:", err.Error())
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow()
+		var version string
+		var productlevel string
+		var edition string
+		var productversion string
+		err = row.Scan(&version, &productlevel, &edition, &productversion)
+		if err != nil {
+			log.Fatal("Scan failed:", err.Error())
+		}
+
+		serverName := fmt.Sprintf("%d: %s\\%s", server.Id, server.Host, server.Instance)
+		fmt.Println(serverName)
+
+		fmt.Printf("Version: %s (%s)\n", productversion, productlevel)
+		fmt.Printf("Edition: %s\n", edition)
+
+		fmt.Println("")
+	}
+
+	fmt.Printf("Server: ")
+	var serverId int
+	_, err = fmt.Scanf("%d\n", &serverId)
+	if err != nil {
+		panic(err)
+	}
+
+	var db *sql.DB
+	for _, server := range cfg.Servers {
+		if server.Id != serverId {
+			continue
+		}
+
+		db, err = getConnection(server)
+		break
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	if db == nil {
+		fmt.Println("Invalid choice")
+	}
+
+	databases, err := getDatabases(db)
+	if err != nil {
+		panic(err)
+	}
+	for i, database := range databases {
+		fmt.Printf("%d: %s\n", i, database)
+	}
+
+	fmt.Printf("Database: ")
+	var databaseIndex int
+	_, err = fmt.Scanf("%d\n", &databaseIndex)
+	if err != nil {
+		panic(err)
+	}
+
+	database := databases[databaseIndex]
+	fmt.Println(database)
+}
+
+func getDatabases(db *sql.DB) ([]string, error) {
+	dbList, err := db.Prepare("SELECT name FROM master.sys.databases")
+	if err != nil {
+		return nil, err
+	}
+	defer dbList.Close()
+
+	var databases []string
+	rows, err := dbList.Query()
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+
+		databases = append(databases, name)
+	}
+
+	return databases, nil
+}
+
+func getConnection(server server) (*sql.DB, error) {
+	query := url.Values{}
+	query.Add("app name", "SQL Backup")
+
+	u := &url.URL{
+		Scheme:   "sqlserver",
+		User:     url.UserPassword(server.User, server.Password),
+		Host:     server.Host,
+		Path:     server.Instance,
+		RawQuery: query.Encode(),
+	}
+	return sql.Open("sqlserver", u.String())
 }
 
 func findMSCIBlock(file io.ReadSeeker) (int64, error) {
