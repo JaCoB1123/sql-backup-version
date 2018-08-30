@@ -44,30 +44,13 @@ func main() {
 	fmt.Printf("SQL Server %s (%d.0)\n", getVersion(version), getMajorVersion(version))
 	fmt.Println("")
 
-	for i, server := range cfg.Servers {
-		db, err := getConnection(server)
+	for i := range cfg.Servers {
+		server := &cfg.Servers[i]
+		getServerVersion(cfg, server)
+	}
 
-		stmt, err := db.Prepare("select @@VERSION, SERVERPROPERTY('ProductLevel'), SERVERPROPERTY('Edition'), SERVERPROPERTY('ProductVersion')")
-		if err != nil {
-			log.Fatal("Prepare failed:", err.Error())
-		}
-		defer stmt.Close()
-
-		row := stmt.QueryRow()
-		var version string
-		var productlevel string
-		var edition string
-		var productversion string
-		err = row.Scan(&version, &productlevel, &edition, &productversion)
-		if err != nil {
-			log.Fatal("Scan failed:", err.Error())
-		}
-
-		server.Edition = edition
-		server.VersionDescription = version
-		server.Version = productversion
-		server.Level = productlevel
-
+	for i := range cfg.Servers {
+		server := cfg.Servers[i]
 		fmt.Printf("%d: %s\n\n", i, server)
 	}
 
@@ -88,6 +71,8 @@ func main() {
 		fmt.Println("Invalid choice")
 	}
 
+	fmt.Println(server.VersionDescription)
+
 	databases, err := getDatabases(db)
 	if err != nil {
 		panic(err)
@@ -105,6 +90,31 @@ func main() {
 
 	database := databases[databaseIndex]
 	fmt.Println(database)
+}
+
+func getServerVersion(cfg *configuration, server *server) {
+	db, err := getConnection(*server)
+
+	stmt, err := db.Prepare("select @@VERSION, SERVERPROPERTY('ProductLevel'), SERVERPROPERTY('Edition'), SERVERPROPERTY('ProductVersion')")
+	if err != nil {
+		log.Fatal("Prepare failed:", err.Error())
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow()
+	var version string
+	var productlevel string
+	var edition string
+	var productversion string
+	err = row.Scan(&version, &productlevel, &edition, &productversion)
+	if err != nil {
+		log.Fatal("Scan failed:", err.Error())
+	}
+
+	server.Edition = edition
+	server.VersionDescription = version
+	server.Version = productversion
+	server.Level = productlevel
 }
 
 func getDatabases(db *sql.DB) ([]string, error) {
