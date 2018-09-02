@@ -30,18 +30,9 @@ type server struct {
 	Edition                  string `json:"-"`
 }
 
-type stringer string
-
-func (s stringer) String() string {
-	return string(s)
-}
-
-type serverList []server
-type databaseList []stringer
-
 // Configuration saves the configuration
 type configuration struct {
-	Servers serverList
+	Servers []server
 	Files   []fileshare
 }
 
@@ -53,7 +44,7 @@ func getConfig() (*configuration, error) {
 	}
 
 	var configuration configuration
-	var servers serverList
+	var servers []server
 	err = json.Unmarshal(serverConfig, &servers)
 	if err != nil {
 		return nil, err
@@ -79,25 +70,4 @@ func getConfig() (*configuration, error) {
 
 func (s server) String() string {
 	return fmt.Sprintf("%s\\%s\nVersion: %s (%s)\nEdition: %s", s.Host, s.Instance, s.Version, s.Level, s.Edition)
-}
-
-type selectable interface {
-	getLength() int
-	getElement(int) fmt.Stringer
-}
-
-func (sl serverList) getLength() int {
-	return len(sl)
-}
-
-func (sl serverList) getElement(i int) fmt.Stringer {
-	return &sl[i]
-}
-
-func (dl databaseList) getLength() int {
-	return len(dl)
-}
-
-func (dl databaseList) getElement(i int) fmt.Stringer {
-	return &dl[i]
 }

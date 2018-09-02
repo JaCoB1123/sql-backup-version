@@ -78,6 +78,7 @@ func main() {
 	fmt.Println(database)*/
 }
 
+/*
 func prompt(values selectable, prompt string) (int, error) {
 	for i := 0; i < values.getLength(); i++ {
 		val := values.getElement(i)
@@ -92,7 +93,7 @@ func prompt(values selectable, prompt string) (int, error) {
 	}
 
 	return serverIndex, nil
-}
+}*/
 
 func getServerVersion(cfg *configuration, server *server) {
 	db, err := getConnection(*server)
@@ -122,14 +123,14 @@ func getServerVersion(cfg *configuration, server *server) {
 	server.Level = productlevel
 }
 
-func getDatabases(db *sql.DB) (databaseList, error) {
+func getDatabases(db *sql.DB) ([]string, error) {
 	dbList, err := db.Prepare("SELECT name FROM master.sys.databases")
 	if err != nil {
 		return nil, err
 	}
 	defer dbList.Close()
 
-	var databases databaseList
+	var databases []string
 	rows, err := dbList.Query()
 	for rows.Next() {
 		var name string
@@ -138,10 +139,11 @@ func getDatabases(db *sql.DB) (databaseList, error) {
 			return nil, err
 		}
 
-		databases = append(databases, stringer(name))
+		databases = append(databases, name)
 	}
 
-	return sort.Strings([]string(databases)), nil
+	sort.Strings([]string(databases))
+	return databases, nil
 }
 
 func getConnection(server server) (*sql.DB, error) {
