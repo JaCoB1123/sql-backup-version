@@ -1,7 +1,16 @@
 <html>
 	<head>
 		<title>SQL Backup</title>
+		<style type="text/css">
+			#left, #right {
+				float: left;
+				width: 50%;
+			}
+		</style>
 		<script type="text/javascript">
+			let targetSelected = false;
+			let sourceSelected = false;
+
 			function updateDatabases(serverIndex) {
 				fetch("http://localhost:2408/api/servers/"+serverIndex+"/databases")	
 				.then(x =>x.json())
@@ -30,10 +39,29 @@
 						servers.appendChild(p);
 					}
 				});
+
+			fetch("http://localhost:2408/api/files/list")
+				.then(x =>x.json())
+				.then(x => {
+					let files = document.getElementById("files");
+					for (var i = 0; i < x.length; i++) {
+						let fileshare = x[i];
+						let p = document.createElement("li");
+						p.innerHTML = fileshare.Path;
+						let index = i;
+						p.onclick = function() { updateFiles(index) };
+						files.appendChild(p);
+					}
+				});
 		</script>
 	</head>
 	<body>
-		<ul id="servers"></ul>
-		<ul id="databases"></ul>
+		<div id="left">
+			<ul id="servers"></ul>
+			<ul id="databases"></ul>
+		</div>
+		<div id="right">
+			<ul id="files"></ul>
+		</div>
 	</body>
 </html>
