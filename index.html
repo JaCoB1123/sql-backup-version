@@ -1,0 +1,39 @@
+<html>
+	<head>
+		<title>SQL Backup</title>
+		<script type="text/javascript">
+			function updateDatabases(serverIndex) {
+				fetch("http://localhost:2408/api/servers/"+serverIndex+"/databases")	
+				.then(x =>x.json())
+				.then(x => {
+					let databases = document.getElementById("databases");
+					databases.innerHTML = "";
+					for (var i = 0; i < x.length; i++) {
+						let database = x[i];
+						let p = document.createElement("li");
+						p.innerHTML = database;
+						databases.appendChild(p);
+					}
+				});			
+			}
+
+			fetch("http://localhost:2408/api/servers/list")
+				.then(x =>x.json())
+				.then(x => {
+					let servers = document.getElementById("servers");
+					for (var i = 0; i < x.length; i++) {
+						let server = x[i];
+						let p = document.createElement("li");
+						p.innerHTML = server.Host + "/" + server.Instance;
+						let index = i;
+						p.onclick = function() { updateDatabases(index) };
+						servers.appendChild(p);
+					}
+				});
+		</script>
+	</head>
+	<body>
+		<ul id="servers"></ul>
+		<ul id="databases"></ul>
+	</body>
+</html>
