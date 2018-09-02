@@ -6,6 +6,18 @@ import (
 	"io/ioutil"
 )
 
+type fileType int
+
+const (
+	Public fileType = iota + 1
+	Local
+)
+
+type fileshare struct {
+	Path string
+	Type fileType
+}
+
 type server struct {
 	Host                     string
 	Instance                 string
@@ -30,23 +42,37 @@ type databaseList []stringer
 // Configuration saves the configuration
 type configuration struct {
 	Servers serverList
+	Files   []fileshare
 }
 
 // GetConfig returns the saved configuration
 func getConfig() (*configuration, error) {
-	config, err := ioutil.ReadFile("./config/servers.json")
+	serverConfig, err := ioutil.ReadFile("./config/servers.json")
 	if err != nil {
 		return nil, err
 	}
 
 	var configuration configuration
 	var servers serverList
-	err = json.Unmarshal(config, &servers)
+	err = json.Unmarshal(serverConfig, &servers)
 	if err != nil {
 		return nil, err
 	}
 
 	configuration.Servers = servers
+
+	fileConfig, err := ioutil.ReadFile("./config/fileshares.json")
+	if err != nil {
+		return nil, err
+	}
+
+	var files []fileshare
+	err = json.Unmarshal(fileConfig, &files)
+	if err != nil {
+		return nil, err
+	}
+
+	configuration.Files = files
 
 	return &configuration, nil
 }

@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"flag"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
+	"net/http"
 	"net/url"
 
 	"database/sql"
@@ -26,7 +27,16 @@ func main() {
 		panic(err)
 	}
 
-	filename := flag.String("filename", "", "path to the backup to analyze")
+	for i := range cfg.Servers {
+		server := &cfg.Servers[i]
+		getServerVersion(cfg, server)
+	}
+
+	var srv service
+	srv.Configuration = cfg
+	http.ListenAndServe(":2408", srv)
+
+	/*filename := flag.String("filename", "", "path to the backup to analyze")
 	flag.Parse()
 
 	if *filename == "" {
@@ -43,11 +53,6 @@ func main() {
 	fmt.Printf("Internal Version: %d\n", version)
 	fmt.Printf("SQL Server %s (%d.0)\n", getVersion(version), getMajorVersion(version))
 	fmt.Println("")
-
-	for i := range cfg.Servers {
-		server := &cfg.Servers[i]
-		getServerVersion(cfg, server)
-	}
 
 	serverIndex, err := prompt(cfg.Servers, "Server: ")
 
@@ -70,7 +75,7 @@ func main() {
 
 	databaseIndex, err := prompt(databases, "Database: ")
 	database := databases[databaseIndex]
-	fmt.Println(database)
+	fmt.Println(database)*/
 }
 
 func prompt(values selectable, prompt string) (int, error) {
@@ -91,6 +96,9 @@ func prompt(values selectable, prompt string) (int, error) {
 
 func getServerVersion(cfg *configuration, server *server) {
 	db, err := getConnection(*server)
+	if err != nil {
+		log.Fatal("Connection failed:", err.Error())
+	}
 
 	stmt, err := db.Prepare("select @@VERSION, SERVERPROPERTY('ProductLevel'), SERVERPROPERTY('Edition'), SERVERPROPERTY('ProductVersion')")
 	if err != nil {
@@ -133,7 +141,7 @@ func getDatabases(db *sql.DB) (databaseList, error) {
 		databases = append(databases, stringer(name))
 	}
 
-	return databases, nil
+	return sort.Strings([]string(databases)), nil
 }
 
 func getConnection(server server) (*sql.DB, error) {
