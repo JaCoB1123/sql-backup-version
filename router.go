@@ -13,6 +13,7 @@ type service struct {
 }
 
 func (srv service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	head, tail := ShiftPath(r.URL.Path)
 	switch head {
 	case "api":
